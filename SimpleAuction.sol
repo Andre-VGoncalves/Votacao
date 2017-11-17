@@ -19,6 +19,42 @@ contract SimpleAuction {
         address _beneficiary
     ) {
         beneficiary = _beneficiary;
-        auction = now + _biddingTime;
+        auctionEnd = now + _biddingTime;
+    }
+
+    function bid () payable {
+        require(now <= auctionEnd);
+
+        require(msg.value > highestBid);
+        if (highestBidder != 0) {
+            pendingReturns[highestBidder] += highestBid;
+        }
+        highestBidder = msg.sender;
+        highestBid = msg.value;
+        HighestBidincreased(msg.sender, msg.value);
+    }
+
+    function withdraw () returns (bool) {
+        uint amount = pedingReturns[msg.sender];
+        if (amount > 0) {
+            pedingReturns[msg.sender] = 0;
+        
+            if (!msg.sender.send(amount)) {
+                pedingReturns[msg.sender] = amount;
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function auctionEnd() {
+
+        require(now >= auctionEnd);
+        require(!ended);
+
+        ended = true;
+        AuctionEnded(highestBidder, highestBid);
+        
+        beneficiary.transfer (highestBid);
     }
 }
